@@ -1,0 +1,36 @@
+# Python cache and logs
+__pycache__/
+*.py[cod]
+*.log
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Streamlit specific
+.streamlit/
+*.sqlite
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model and large files
+*.h5
+*.keras
+*.pkl
+*.pt
+*.ckpt
+*.onnx
+model/
+temp.jpg
+output.txt
+
+# Zip or large archives
+*.zip
+*.tar
+*.tar.gz
