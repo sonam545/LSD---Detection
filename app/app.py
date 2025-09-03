@@ -10,8 +10,9 @@ import time
 import pygame
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from generate_report import create_pdf_report
 
-st.set_page_config(page_title="Lumpy Skin Disease Detection", layout="centered")
+st.set_page_config(page_title="Lumpy Skin Disease Detection", layout="wide")
 
 # ---------------------------
 # Load Model (Cached)
@@ -56,6 +57,8 @@ translations = {
 # Grad-CAM Function
 # ---------------------------
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
+    img_array = tf.convert_to_tensor(img_array)
+
     grad_model = tf.keras.models.Model(
         [model.inputs],
         [model.get_layer(last_conv_layer_name).output, model.output]
@@ -63,16 +66,20 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
 
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        pred_index = tf.argmax(predictions[0]).numpy().item()
-        class_channel = predictions[0, pred_index]
+        pred_index = int(tf.argmax(predictions[0]))
+        class_channel = predictions[0][pred_index]
 
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
     conv_outputs = conv_outputs[0]
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
+
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
+
+
 
 # ---------------------------
 # Prediction Function
@@ -115,7 +122,6 @@ st.write("Upload or capture cow image for prediction.")
 
 lang_choice = st.selectbox("Choose Language for Voice Feedback", list(languages.keys()))
 option = st.radio("Choose input type", ["Upload Image", "Use Webcam"])
-
 # ---------------------------
 # Upload Image Flow
 # ---------------------------
@@ -152,6 +158,27 @@ if option == "Upload Image":
             superimposed_img = cv2.addWeighted(img_cv, 0.6, jet_heatmap, 0.4, 0)
             st.image(superimposed_img, caption="Grad-CAM Heatmap", use_column_width=True)
 
+            gradcam_path = "reports/gradcam_temp.jpg"
+            os.makedirs("reports", exist_ok=True)
+            cv2.imwrite(gradcam_path, superimposed_img)
+
+            pdf_path = create_pdf_report(
+            prediction=result,
+            confidence=confidence,
+            gradcam_path=gradcam_path,
+            farmer_name=st.text_input("Farmer Name (optional)"),
+            location=st.text_input("Location (optional)"),
+            breed=st.text_input("Cow Breed (optional)"),
+            age=st.text_input("Cow Age (optional)")
+        )
+
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="📄 Download PDF Report",
+                    data=f,
+                    file_name=os.path.basename(pdf_path),
+                    mime="application/pdf"
+                )
 # ---------------------------
 # Webcam Flow
 # ---------------------------
