@@ -38,6 +38,7 @@ import cv2
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
+from generate_report import generate_pdf_report
 
 # Load the model
 model = keras.models.load_model("model/lumpy_skin_model.keras")
@@ -65,6 +66,16 @@ def predict_frame(frame):
         label = "Infected" if pred_class == 1 else "Healthy"
 
     return label, confidence
+
+generate_pdf_report(
+    output_path="reports/LSD_Report.pdf",
+    prediction=predicted_class,
+    confidence=confidence_score,
+    gradcam_path="gradcam_output.jpg",
+    farmer_id="Farmer01",
+    cattle_id="Cow12"
+)
+
 
 while True:
     ret, frame = cap.read()

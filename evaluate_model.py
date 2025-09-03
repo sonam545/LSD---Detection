@@ -1,6 +1,7 @@
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report, confusion_matrix
+from generate_report import generate_pdf_report
 import numpy as np
 
 # Data generator (same as training)
@@ -14,6 +15,15 @@ model = load_model('model/lumpy_skin_model.keras')
 y_true = val_gen.classes
 y_prob = model.predict(val_gen).ravel()
 y_pred = (y_prob > 0.5).astype(int)
+
+generate_pdf_report(
+    output_path="reports/LSD_Report.pdf",
+    prediction=predicted_class,
+    confidence=confidence_score,
+    gradcam_path="gradcam_output.jpg",
+    farmer_id="Farmer01",
+    cattle_id="Cow12"
+)
 
 # Evaluation
 print("Classification Report:\n", classification_report(y_true, y_pred, target_names=['Healthy', 'Infected']))
